@@ -1,0 +1,47 @@
+# Version Control
+.git/
+.gitignore
+.gitattributes
+.hg/
+.svn/
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# CI / Docs / Logs
+.github/
+.gitlab-ci.yml
+.circleci/
+.travis.yml
+docs/
+tests/
+test/
+*.md
+*.log
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.tox/
+.coverage
+htmlcov/
+dist/
+build/
