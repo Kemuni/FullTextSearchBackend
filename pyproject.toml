@@ -8,5 +8,24 @@ dependencies = [
     "fastapi[standard]>=0.142.2",
 ]
 
+[dependency-groups]
+dev = [
+    "coverage>=7.16.2",
+    "prek>=0.5.4",
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+    "ty>=0.0.84",
+]
+
 [tool.fastapi]
 entrypoint = "main:app"
+
+[tool.ruff]
+target-version = "py312"
+exclude = []
+
+[tool.coverage.html]
+show_contexts = true
+
+[tool.ty.terminal]
+error-on-warning = true
