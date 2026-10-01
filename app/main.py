@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
+from app.api.router import api_router
+from app.core.config import settings
+
 app = FastAPI(
-    title="FullTextSearchBackend",
+    title=settings.PROJECT_NAME,
 )
 
 app.add_middleware(
@@ -12,7 +15,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.get("/api/v1/health-check/")
-async def health_check():
-    return {"status": "ok"}
+app.include_router(api_router, prefix="/api")
