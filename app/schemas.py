@@ -9,7 +9,7 @@ class ErrorDetail(BaseModel):
     message: str
 
 
-class APIResponse[T](BaseModel):
+class APIResponse[T](BaseModel):  # noqa: UP046
     """Базовый единый формат ответа нашего API"""
 
     success: bool
