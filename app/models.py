@@ -10,6 +10,8 @@ from app.core.db import Base
 
 
 class Post(Base):
+    """Пост в социальной сети"""
+
     __tablename__ = "posts"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -39,6 +41,8 @@ class OutboxAction(enum.StrEnum):
 
 
 class PostOutbox(Base):
+    """Модель для реализации паттерна Outbox. Позволяет синхронизовать данные между Postgres и ElasticSearch."""
+
     __tablename__ = "post_outboxes"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)

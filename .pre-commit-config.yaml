@@ -6,6 +6,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: check-added-large-files
+        exclude: '^init_data/posts.csv$'
       - id: check-toml
       - id: check-yaml
         args:

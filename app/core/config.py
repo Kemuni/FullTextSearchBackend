@@ -1,4 +1,6 @@
-from pydantic import PostgresDsn, field_validator
+from pathlib import Path
+
+from pydantic import FilePath, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,6 +13,11 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
     DATABASE_URL: PostgresDsn
+
+    ELASTICSEARCH_URL: str
+    ELASTICSEARCH_PASSWORD: str
+
+    INIT_DATA_PATH: FilePath = Path("init_data", "posts.csv")
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
