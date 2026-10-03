@@ -1,6 +1,6 @@
-from fastapi import APIRouter
+from app.api.base import APIResponseRouter
 
-router = APIRouter(tags=["utils"])
+router = APIResponseRouter(tags=["utils"])
 
 
 @router.get("/health-check/")
