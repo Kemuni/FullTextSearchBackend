@@ -38,3 +38,4 @@ class PostPublic(PostIn):
 
     id: int
     created_date: datetime.datetime | None = None
+    updated_at: datetime.datetime | None = None

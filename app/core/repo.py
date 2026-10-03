@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Post
+from app.models import OutboxAction, OutboxStatus, Post, PostOutbox
 from app.schemas import PostIn
 
 
@@ -26,7 +26,15 @@ class DatabaseRepo:
     ) -> Post:
         post = Post(id=post_id, **post_in.model_dump())
         db_post = await self.db.merge(post)
+        await self.db.flush()
+        outbox = PostOutbox(
+            payload={"id": db_post.id, **post_in.model_dump()},
+            status=OutboxStatus.PENDING,
+            action=OutboxAction.CREATE if post_id is None else OutboxAction.UPDATE,
+        )
+        self.db.add(outbox)
         await self.db.commit()
+        await self.db.refresh(db_post)
         return db_post
 
     async def delete_post(self, post_id: int) -> bool:
@@ -34,5 +42,11 @@ class DatabaseRepo:
         if post is None:
             return False
         await self.db.delete(post)
+        outbox = PostOutbox(
+            payload={"id": post_id},
+            status=OutboxStatus.PENDING,
+            action=OutboxAction.DELETE,
+        )
+        self.db.add(outbox)
         await self.db.commit()
         return True

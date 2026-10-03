@@ -9,7 +9,11 @@ from app.core.db import async_session_maker
 
 async def get_db() -> AsyncGenerator[AsyncSession]:
     async with async_session_maker() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_db)]

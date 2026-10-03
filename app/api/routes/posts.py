@@ -47,7 +47,11 @@ async def update_post(
     post_id: int, post_in: PostIn, db: AsyncSession = Depends(get_db)
 ):
     repo = DatabaseRepo(db)
-    return SuccessResponse(data=await repo.create_or_update(post_in, post_id=post_id))
+    return SuccessResponse(
+        data=PostPublic.model_validate(
+            await repo.create_or_update(post_in, post_id=post_id)
+        )
+    )
 
 
 @router.delete(
