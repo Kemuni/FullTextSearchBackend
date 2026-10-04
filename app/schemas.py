@@ -33,6 +33,12 @@ class PostIn(BaseModel):
     rubrics: list[str] = Field(default_factory=list)
 
 
+class InitPostIn(PostIn):
+    """Схема поста для init данных"""
+
+    created_date: datetime.datetime | None = None
+
+
 class PostPublic(PostIn):
     model_config = ConfigDict(from_attributes=True)
 

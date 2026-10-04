@@ -4,7 +4,7 @@ from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import OutboxAction, OutboxStatus, Post, PostOutbox
-from app.schemas import PostIn
+from app.schemas import InitPostIn, PostIn
 
 
 class DatabaseRepo:
@@ -56,7 +56,7 @@ class DatabaseRepo:
         await self.db.commit()
         return True
 
-    async def process_posts_batch(self, batch: list[PostIn]) -> list[Post]:
+    async def process_posts_batch(self, batch: list[InitPostIn]) -> list[Post]:
         db_posts = [Post(**post.model_dump()) for post in batch]
         self.db.add_all(db_posts)
         await self.db.commit()

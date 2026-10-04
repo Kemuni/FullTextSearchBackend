@@ -1,6 +1,7 @@
 import csv
 import logging
 from ast import literal_eval
+from datetime import datetime
 from itertools import islice
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +11,7 @@ from app.core.db import async_session_maker
 from app.core.elasticsearch import es_client, get_posts_index
 from app.core.repo import DatabaseRepo
 from app.documents import PostDocument
-from app.schemas import PostIn
+from app.schemas import InitPostIn
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +35,10 @@ async def fill_init_data() -> None:
     logger.info("Init data filled")
 
 
-def process_csv_post_to_schema(csv_post: dict) -> PostIn:
-    return PostIn(
+def process_csv_post_to_schema(csv_post: dict) -> InitPostIn:
+    return InitPostIn(
         text=csv_post["text"],
+        created_date=datetime.strptime(csv_post["created_date"], "%Y-%m-%d %H:%M:%S"),
         rubrics=[str(rubric) for rubric in literal_eval(csv_post["rubrics"])],
     )
 

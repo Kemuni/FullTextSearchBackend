@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.repo import DatabaseRepo
 from app.models import OutboxAction, OutboxStatus, PostOutbox
-from app.schemas import PostIn
+from app.schemas import InitPostIn, PostIn
 
 
 async def test_is_posts_exist_and_get_methods(db_session: AsyncSession) -> None:
@@ -71,7 +73,18 @@ async def test_process_posts_batch_persists_all_posts(db_session: AsyncSession) 
     repo = DatabaseRepo(db_session)
 
     posts = await repo.process_posts_batch(
-        [PostIn(text="first", rubrics=["a"]), PostIn(text="second", rubrics=["b"])]
+        [
+            InitPostIn(
+                text="first",
+                rubrics=["a"],
+                created_date=datetime(2019, 7, 25, 12, 42, 13),
+            ),
+            InitPostIn(
+                text="second",
+                rubrics=["b"],
+                created_date=datetime(2019, 7, 25, 12, 42, 45),
+            ),
+        ]
     )
 
     assert [post.text for post in posts] == ["first", "second"]
