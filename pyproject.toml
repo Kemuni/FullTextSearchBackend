@@ -18,7 +18,9 @@ dev = [
     "prek>=0.5.4",
     "psycopg[binary]>=3.3.6",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "ruff>=0.16.10",
+    "testcontainers[elasticsearch,postgres]>=4.15.0",
     "ty>=0.0.84",
 ]
 
@@ -29,8 +31,22 @@ entrypoint = "app.main:app"
 target-version = "py312"
 exclude = []
 
-[tool.coverage.html]
-show_contexts = true
+[tool.coverage.run]
+source = ["app"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+fail_under = 80
+show_missing = true
+
+[tool.pytest.ini_options]
+anyio_mode = "auto"
+pythonpath = ["."]
 
 [tool.ty.terminal]
 error-on-warning = true

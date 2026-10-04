@@ -1,5 +1,6 @@
 import csv
 import logging
+from ast import literal_eval
 from itertools import islice
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,7 +37,7 @@ async def fill_init_data() -> None:
 def process_csv_post_to_schema(csv_post: dict) -> PostIn:
     return PostIn(
         text=csv_post["text"],
-        rubrics=list(map(str.strip, csv_post["rubrics"][1:-1].split(","))),
+        rubrics=[str(rubric) for rubric in literal_eval(csv_post["rubrics"])],
     )
 
 

@@ -14,7 +14,7 @@ async_connections.add_connection("default", es_client)
 INDEXES = (PostDocument,)
 
 
-async def create_es_indexes() -> None:
+async def create_es_indexes() -> None:  # pragma: no cover
     """Создает все зарегистрированные индексы через публичный AsyncIndex API."""
     for document in INDEXES:
         index_meta = document.Index
@@ -28,6 +28,6 @@ async def create_es_indexes() -> None:
             await index.create()
 
 
-def get_posts_index() -> dsl.AsyncIndex:
+def get_posts_index() -> dsl.AsyncIndex:  # pragma: no cover
     """Возвращает публичный DSL-объект индекса постов."""
     return dsl.AsyncIndex(PostDocument.Index.name, using=es_client)
