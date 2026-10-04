@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Pre-commit and tests
+    runs-on: ubuntu-latest
+    outputs:
+      pre_commit_status: ${{ steps.run-checks.outputs.pre_commit_status }}
+      pytest_status: ${{ steps.run-checks.outputs.pytest_status }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-groups --frozen
+
+      - name: Run pre-commit and pytest
+        id: run-checks
+        shell: bash
+        run: |
+          set +e
+
+          uv run prek run --all-files 2>&1 | tee pre-commit.log
+          pre_commit_status=${PIPESTATUS[0]}
+
+          uv run pytest -q 2>&1 | tee pytest.log
+          pytest_status=${PIPESTATUS[0]}
+
+          echo "pre_commit_status=${pre_commit_status}" >> "$GITHUB_OUTPUT"
+          echo "pytest_status=${pytest_status}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## CI checks"
+            echo
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            echo "| pre-commit | $([ "$pre_commit_status" -eq 0 ] && echo '✅ Passed' || echo '❌ Failed') |"
+            echo "| pytest | $([ "$pytest_status" -eq 0 ] && echo '✅ Passed' || echo '❌ Failed') |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$pre_commit_status" -ne 0 ] || [ "$pytest_status" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Upload check logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-logs
+          path: |
+            pre-commit.log
+            pytest.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  comment-pr:
+    name: Comment check result on pull request
+    needs: checks
+    if: >-
+      always() &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Create or update CI summary comment
+        uses: actions/github-script@v7
+        env:
+          CHECK_RESULT: ${{ needs.checks.result }}
+          PRE_COMMIT_STATUS: ${{ needs.checks.outputs.pre_commit_status }}
+          PYTEST_STATUS: ${{ needs.checks.outputs.pytest_status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const marker = '<!-- full-text-search-ci-summary -->';
+            const result = process.env.CHECK_RESULT === 'success' ? '✅ Passed' : '❌ Failed';
+            const status = (value) => value === '0' ? '✅ Passed' : '❌ Failed';
+            const body = `${marker}
+            ## CI checks: ${result}
+
+            | Check | Status |
+            | --- | --- |
+            | pre-commit | ${status(process.env.PRE_COMMIT_STATUS)} |
+            | pytest | ${status(process.env.PYTEST_STATUS)} |
+
+            [Open logs and artifacts](${process.env.RUN_URL})`;
+            const issue_number = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+            });
+            const previousComment = comments.find(
+              (comment) => comment.user.type === 'Bot' && comment.body.includes(marker),
+            );
+
+            if (previousComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: previousComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+                body,
+              });
+            }
