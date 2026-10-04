@@ -1,19 +1,19 @@
-.PHONY: help dev-env fastapi-dev precommit-check sync-all test
+.PHONY: help up-dev-env fastapi-dev precommit-check sync-all test
 
 DEV_SERVICES = db elasticsearch kibana init-data
 
 help:
 	@echo "Доступные команды:"
-	@echo "	make dev-env				- Запустить dev окружение (Postgres, ES, Kibana, init-data)"
+	@echo "	make up-dev-env				- Запустить dev окружение (Postgres, ES, Kibana, init-data)"
 	@echo "	make down-dev-env			- Остановить dev окружение (Postgres, ES, Kibana, init-data)"
 	@echo "	make fastapi-dev			- Запустить FastAPI в dev режиме"
 	@echo "	make install-precommit			- Установить pre-commit хуки"
 	@echo "	make precommit-check			- Запустить проверку pre-commit"
 	@echo "	make sync-all				- Синхронизировать все uv пакеты"
-	@echo "	make test					- Запустить тесты"
+	@echo "	make test				- Запустить тесты"
 
 # Start development environment (Postgres, ES, Kibana, init-data)
-dev-env:
+up-dev-env:
 	docker compose -f compose.yml up --build -d ${DEV_SERVICES}
 
 # Stop development environment (Postgres, ES, Kibana, init-data)
