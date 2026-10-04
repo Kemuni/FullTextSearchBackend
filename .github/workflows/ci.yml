@@ -12,6 +12,11 @@ jobs:
   checks:
     name: Pre-commit and tests
     runs-on: ubuntu-latest
+    env:
+      PROJECT_NAME: FullTextSearchBackend CI
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+      ELASTICSEARCH_URL: http://localhost:9200
+      ELASTICSEARCH_PASSWORD: not-used-in-tests
     outputs:
       pre_commit_status: ${{ steps.run-checks.outputs.pre_commit_status }}
       pytest_status: ${{ steps.run-checks.outputs.pytest_status }}
