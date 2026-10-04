@@ -21,6 +21,18 @@ class DatabaseRepo:
         result = await self.db.execute(query)
         return result.scalars().all()
 
+    async def get_posts_after_id(self, after_id: int, limit: int) -> Sequence[Post]:
+        query = select(Post).where(Post.id > after_id).order_by(Post.id).limit(limit)
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def get_posts_by_ids(self, post_ids: list[int]) -> Sequence[Post]:
+        if not post_ids:
+            return []
+        query = select(Post).where(Post.id.in_(post_ids))
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
     async def get_post(self, post_id: int) -> Post | None:
         query = select(Post).where(Post.id == post_id)
         result = await self.db.execute(query)
@@ -56,7 +68,9 @@ class DatabaseRepo:
         await self.db.commit()
         return True
 
-    async def process_posts_batch(self, batch: list[PostIn]):
+    async def process_posts_batch(
+        self, batch: list[PostIn], *, commit: bool = True
+    ) -> None:
         db_posts = [Post(**post.model_dump()) for post in batch]
         self.db.add_all(db_posts)
         await self.db.flush()
@@ -69,4 +83,5 @@ class DatabaseRepo:
             for db_post, post_in in zip(db_posts, batch, strict=False)
         ]
         self.db.add_all(db_outbox)
-        await self.db.commit()
+        if commit:
+            await self.db.commit()

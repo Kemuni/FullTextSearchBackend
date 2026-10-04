@@ -1,11 +1,35 @@
+import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.elasticsearch import create_es_indexes, es_client
 from app.core.exception_handlers import register_exception_handlers
+from app.tasks.fill_init_data import fill_init_data
 
-app = FastAPI(title=settings.PROJECT_NAME)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
+    logger.info("Starting application...")
+
+    await es_client.info()
+    await create_es_indexes()
+    await fill_init_data()
+    yield
+    await es_client.close()
+    logger.info("Shutting down application...")
+
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    lifespan=lifespan,
+)
 register_exception_handlers(app)
 
 app.add_middleware(
