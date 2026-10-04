@@ -46,11 +46,15 @@
     ```shell
     make sync-all
     ```
-5. Запускаем FastAPI в режиме разработки:
+5. Копируем `.env.example` и настраиваем `.env`:
+   ```shell
+   cp .env.example .env
+   ```
+6. Запускаем FastAPI в режиме разработки:
    ```shell
     make fastapi-dev
     ```
-6. Заходим на `http://localhost:8000/docs` и пользуемся `Swagger`.
+7. Заходим на `http://localhost:8000/docs` и пользуемся `Swagger`.
 
 На данном проекте настроен **pre-commit**, чтобы его зарегистрировать напишите следующую
 команду для автозапуска проверки перед коммитом:
