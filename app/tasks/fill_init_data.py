@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import async_session_maker
-from app.core.elasticsearch import es_client
+from app.core.elasticsearch import es_client, get_posts_index
 from app.core.repo import DatabaseRepo
 from app.documents import PostDocument
 from app.schemas import PostIn
@@ -17,48 +17,39 @@ BATCH_SIZE = 500
 
 
 async def fill_init_data() -> None:
-    """Идемпотентно заполняет Postgres и синхронизирует начальные данные с ES"""
+    """Заполняет Postgres и Elasticsearch из CSV в одних и тех же батчах."""
     logger.info("Filling init data...")
     async with async_session_maker() as session:
         repo = DatabaseRepo(session)
         if await repo.is_posts_exist():
-            logger.info("Found posts, skipping Postgres init data")
-        else:
-            with settings.INIT_DATA_PATH.open(encoding="utf-8", newline="") as f:
-                reader = csv.DictReader(f)
-                while batch := list(islice(reader, BATCH_SIZE)):
-                    await process_batch(session, batch, commit=False)
+            logger.info("Found posts, skipping init data")
+            return
 
-    async with async_session_maker() as session:
-        repo = DatabaseRepo(session)
-        indexed_count = await sync_posts_to_elasticsearch(repo)
-    logger.info(
-        "Init data filled; synchronized %s posts to Elasticsearch", indexed_count
+        with settings.INIT_DATA_PATH.open(encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            while batch := list(islice(reader, BATCH_SIZE)):
+                await process_batch(session, batch)
+    await get_posts_index().refresh()
+    logger.info("Init data filled")
+
+
+def process_csv_post_to_schema(csv_post: dict) -> PostIn:
+    return PostIn(
+        text=csv_post["text"],
+        rubrics=list(map(str.strip, csv_post["rubrics"][1:-1].split(","))),
     )
 
 
-async def sync_posts_to_elasticsearch(repo: DatabaseRepo) -> int:
-    """Повторно записывает документы с _id=id Postgres без создания дубликатов"""
-
-    async def documents():
-        last_id = 0
-        while posts := await repo.get_posts_after_id(last_id, BATCH_SIZE):
-            for post in posts:
-                yield PostDocument.from_post(post)
-            last_id = posts[-1].id
-
-    indexed_count, _ = await PostDocument.bulk(
-        documents(),
-        using=es_client,
-        refresh="wait_for",
-    )
-    return indexed_count
-
-
-async def process_batch(
-    session: AsyncSession, batch: list[dict], *, commit: bool = True
-) -> None:
+async def process_batch(session: AsyncSession, batch: list[dict]) -> None:
     repo = DatabaseRepo(session)
     logger.info(f"Filling batch: {len(batch)} posts")
-    await repo.process_posts_batch([PostIn(**post) for post in batch], commit=commit)
+    db_posts = await repo.process_posts_batch(
+        [process_csv_post_to_schema(csv_post) for csv_post in batch]
+    )
+
+    async def documents():
+        for post in db_posts:
+            yield PostDocument.from_post(post)
+
+    await PostDocument.bulk(documents(), using=es_client)
     logger.info(f"Batch filled: {len(batch)} posts")

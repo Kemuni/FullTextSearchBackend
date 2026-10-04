@@ -1,5 +1,6 @@
 from typing import Annotated
 
+from elasticsearch.dsl.query import Bool, MultiMatch, Wildcard
 from fastapi import Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,20 +30,23 @@ async def get_posts(db: AsyncSession = Depends(get_db)):
 async def search_posts(
     query: Annotated[str, Query(min_length=1, max_length=500)],
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    db: AsyncSession = Depends(get_db),
 ):
     search = (
         PostDocument.search(using=es_client)
-        .query("multi_match", query=query, fields=["text"])
+        .query(
+            Bool(
+                should=[
+                    MultiMatch(query=query, fields=["text"]),
+                    Wildcard(rubrics=f"*{query}*"),
+                ],
+                minimum_should_match=1,
+            )
+        )
         .extra(size=limit)
     )
     response = await search.execute()
-    post_ids = [int(hit.meta.id) for hit in response.hits]
-
-    repo = DatabaseRepo(db)
-    posts_by_id = {post.id: post for post in await repo.get_posts_by_ids(post_ids)}
     return SuccessResponse(
-        data=[posts_by_id[post_id] for post_id in post_ids if post_id in posts_by_id]
+        data=[PostPublic.model_validate(hit.to_dict()) for hit in response.hits]
     )
 
 
