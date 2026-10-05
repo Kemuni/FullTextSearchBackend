@@ -42,11 +42,19 @@ async def test_create_and_update_create_corresponding_outbox_events(
         (OutboxAction.CREATE, OutboxStatus.PENDING),
         (OutboxAction.UPDATE, OutboxStatus.PENDING),
     ]
-    assert outboxes[-1].payload == {
-        "id": created.id,
-        "text": "after",
-        "rubrics": ["VK-2"],
-    }
+    assert outboxes[-1].payload["id"] == created.id
+    assert outboxes[-1].payload["text"] == "after"
+    assert outboxes[-1].payload["rubrics"] == ["VK-2"]
+    assert (
+        datetime.strptime(
+            outboxes[-1].payload["created_date"], "%Y-%m-%d %H:%M:%S.%f%z"
+        )
+        == created.created_date
+    )
+    assert (
+        datetime.strptime(outboxes[-1].payload["updated_at"], "%Y-%m-%d %H:%M:%S.%f%z")
+        >= updated.updated_at
+    )
 
 
 async def test_delete_post_creates_delete_outbox_event(

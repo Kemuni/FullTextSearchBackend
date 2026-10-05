@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     ELASTICSEARCH_PASSWORD: str
 
     INIT_DATA_PATH: FilePath = Path("init_data", "posts.csv")
+    OUTBOX_BATCH_SIZE: int = 100
+    OUTBOX_POLL_INTERVAL_SECONDS: float = 1.0
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

@@ -45,3 +45,13 @@ class PostPublic(PostIn):
     id: int
     created_date: datetime.datetime | None = None
     updated_at: datetime.datetime | None = None
+
+
+class OutboxPostPayload(BaseModel):
+    """Схема для payload Outbox-события"""
+
+    id: int
+    text: str
+    rubrics: list[str] = Field(default_factory=list)
+    created_date: datetime.datetime
+    updated_at: datetime.datetime

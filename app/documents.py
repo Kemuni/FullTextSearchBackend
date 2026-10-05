@@ -4,6 +4,7 @@ from typing import Self
 from elasticsearch import dsl
 
 from app.models import Post
+from app.schemas import OutboxPostPayload
 
 
 class PostDocument(dsl.AsyncDocument):
@@ -25,6 +26,19 @@ class PostDocument(dsl.AsyncDocument):
             updated_at=post.updated_at,
         )
         document.meta.id = str(post.id)
+        return document
+
+    @classmethod
+    def from_outbox_payload(cls, payload: OutboxPostPayload) -> Self:
+        """Создает ES-документ из проверенного payload Outbox-события."""
+        document = cls(
+            id=payload.id,
+            text=payload.text,
+            rubrics=payload.rubrics,
+            created_date=payload.created_date,
+            updated_at=payload.updated_at,
+        )
+        document.meta.id = str(document.id)
         return document
 
     class Index:

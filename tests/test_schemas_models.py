@@ -55,7 +55,7 @@ def test_response_schemas_enforce_success_and_error_shapes() -> None:
 def test_outbox_enums_have_database_values() -> None:
     assert {member.value for member in OutboxStatus} == {
         "pending",
-        "in_progress",
         "completed",
+        "failed",
     }
     assert {member.value for member in OutboxAction} == {"create", "update", "delete"}
