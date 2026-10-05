@@ -37,6 +37,7 @@ class InitPostIn(PostIn):
     """Схема поста для init данных"""
 
     created_date: datetime.datetime | None = None
+    updated_at: datetime.datetime | None = None
 
 
 class PostPublic(PostIn):
@@ -45,6 +46,23 @@ class PostPublic(PostIn):
     id: int
     created_date: datetime.datetime | None = None
     updated_at: datetime.datetime | None = None
+
+
+class PaginatedResponse[T](BaseModel):
+    page: int
+    page_size: int
+    total_pages: int
+    data: list[T]
+
+
+class SearchResponse[T](BaseModel):
+    """Страница результатов, полученная с помощью курсора Elasticsearch."""
+
+    old_cursor: str | None = None
+    next_cursor: str | None = None
+    page_size: int
+    total: int
+    data: list[T]
 
 
 class OutboxPostPayload(BaseModel):

@@ -39,6 +39,7 @@ def process_csv_post_to_schema(csv_post: dict) -> InitPostIn:
     return InitPostIn(
         text=csv_post["text"],
         created_date=datetime.strptime(csv_post["created_date"], "%Y-%m-%d %H:%M:%S"),
+        updated_at=datetime.strptime(csv_post["created_date"], "%Y-%m-%d %H:%M:%S"),
         rubrics=[str(rubric) for rubric in literal_eval(csv_post["rubrics"])],
     )
 
