@@ -1,6 +1,6 @@
 .PHONY: help up-dev-env fastapi-dev precommit-check sync-all test
 
-DEV_SERVICES = db elasticsearch kibana init-data
+DEV_SERVICES = db elasticsearch kibana init-data outbox-worker
 
 help:
 	@echo "Доступные команды:"

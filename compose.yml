@@ -84,6 +84,23 @@ services:
       ELASTICSEARCH_URL: http://elasticsearch:9200
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD?Variable not set}
 
+  outbox-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m app.tasks.outbox_worker
+    restart: unless-stopped
+    depends_on:
+      init-data:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      PROJECT_NAME: ${PROJECT_NAME?Variable not set}
+      DATABASE_URL: postgresql://${POSTGRES_USER?Variable not set}:${POSTGRES_PASSWORD?Variable not set}@db:5432/${POSTGRES_DB?Variable not set}
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD?Variable not set}
+
 
 volumes:
   app-db-data:
