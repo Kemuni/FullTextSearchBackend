@@ -10,8 +10,7 @@
    <img src="https://img.shields.io/badge/ElasticSearch-005571?style=for-the-badge&logo=elasticsearch&logoColor=white"/>
    <img src="https://img.shields.io/badge/Github_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white"/>
    <img src="https://img.shields.io/badge/Docker-00B2FF?style=for-the-badge&logo=docker&logoColor=white"/>
-
-[//]: # (   <img src="https://img.shields.io/badge/Redis-a32422?style=for-the-badge&logo=redis&logoColor=white"/>)
+   <img src="https://img.shields.io/badge/Redis-a32422?style=for-the-badge&logo=redis&logoColor=white"/>
 </p>
 
 ## Цель
