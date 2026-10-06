@@ -5,7 +5,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.base import APIResponseRouter
 from app.api.deps import get_db
+from app.core.config import settings
 from app.core.elasticsearch import ElasticSearchRepo
+from app.core.redis import (
+    delete_cached_value,
+    get_cached_value,
+    read_rate_limit,
+    set_cached_value,
+    write_rate_limit,
+)
 from app.core.repo import DatabaseRepo
 from app.schemas import (
     PaginatedResponse,
@@ -17,12 +25,18 @@ from app.schemas import (
 )
 
 router = APIResponseRouter(prefix="/posts", tags=["posts"])
+POST_CACHE_KEY_PREFIX = "post"
+
+
+def _post_cache_key(post_id: int) -> str:
+    return f"{POST_CACHE_KEY_PREFIX}:{post_id}"
 
 
 @router.get(
     "/",
     summary="Получение списка постов с пагинацией по БД PostgreSQL",
     response_model=SuccessResponse[PaginatedResponse[PostPublic]],
+    dependencies=[Depends(read_rate_limit)],
 )
 async def get_posts(
     db: AsyncSession = Depends(get_db),
@@ -51,6 +65,7 @@ async def get_posts(
     "/search/",
     summary="Получение списка постов с пагинацией через ElasticSearch",
     response_model=SuccessResponse[SearchResponse[PostPublic]],
+    dependencies=[Depends(read_rate_limit)],
 )
 async def search_posts(filter_query: Annotated[PostSearchQuery, Query()]):
     hits, next_cursor, total_hits = await ElasticSearchRepo.search_posts(
@@ -79,6 +94,7 @@ async def search_posts(filter_query: Annotated[PostSearchQuery, Query()]):
     "/rubrics/",
     summary="Получение списка уникальных rubrics с пагинацией через ElasticSearch",
     response_model=SuccessResponse[SearchResponse[str]],
+    dependencies=[Depends(read_rate_limit)],
 )
 async def get_rubrics(
     page_size: Annotated[
@@ -105,49 +121,66 @@ async def get_rubrics(
     "/{post_id}",
     summary="Получения поста по ID",
     response_model=SuccessResponse[PostPublic],
+    dependencies=[Depends(read_rate_limit)],
 )
 async def get_post(post_id: int, db: AsyncSession = Depends(get_db)):
+    cached_post = await get_cached_value(_post_cache_key(post_id))
+    if cached_post is not None:
+        return SuccessResponse(data=PostPublic.model_validate_json(cached_post))
+
     repo = DatabaseRepo(db)
     db_post = await repo.get_post(post_id)
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
-    return SuccessResponse(data=db_post)
+    post = PostPublic.model_validate(db_post)
+    await set_cached_value(
+        _post_cache_key(post_id),
+        post.model_dump_json(),
+        settings.POST_CACHE_TTL_SECONDS,
+    )
+    return SuccessResponse(data=post)
 
 
 @router.post(
     "/",
     summary="Добавление нового поста",
     response_model=SuccessResponse[PostPublic],
+    dependencies=[Depends(write_rate_limit)],
 )
 async def create_post(post_in: PostIn, db: AsyncSession = Depends(get_db)):
     repo = DatabaseRepo(db)
-    return SuccessResponse(data=await repo.create_or_update(post_in))
+    post = await repo.create_or_update(post_in)
+    await delete_cached_value(_post_cache_key(post.id))
+    return SuccessResponse(data=post)
 
 
 @router.put(
     "/{post_id}",
     summary="Изменение созданного поста",
     response_model=SuccessResponse[PostPublic],
+    dependencies=[Depends(write_rate_limit)],
 )
 async def update_post(
     post_id: int, post_in: PostIn, db: AsyncSession = Depends(get_db)
 ):
     repo = DatabaseRepo(db)
-    return SuccessResponse(
-        data=PostPublic.model_validate(
-            await repo.create_or_update(post_in, post_id=post_id)
-        )
+    post = PostPublic.model_validate(
+        await repo.create_or_update(post_in, post_id=post_id)
     )
+    await delete_cached_value(_post_cache_key(post_id))
+    return SuccessResponse(data=post)
 
 
 @router.delete(
     "/{post_id}",
     summary="Удаление существующего поста",
     response_model=SuccessResponse,
+    dependencies=[Depends(write_rate_limit)],
 )
 async def delete_post(post_id: int, db: AsyncSession = Depends(get_db)):
     repo = DatabaseRepo(db)
     is_success = await repo.delete_post(post_id)
     if not is_success:
         raise HTTPException(status_code=404, detail="Post not found")
+    await delete_cached_value(_post_cache_key(post_id))
     return SuccessResponse(data=None)

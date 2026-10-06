@@ -16,6 +16,12 @@ class Settings(BaseSettings):
 
     ELASTICSEARCH_URL: str
     ELASTICSEARCH_PASSWORD: str
+    REDIS_URL: str
+
+    POST_CACHE_TTL_SECONDS: int = 60
+    READ_RATE_LIMIT: int = 120
+    WRITE_RATE_LIMIT: int = 30
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
 
     INIT_DATA_PATH: FilePath = Path("init_data", "posts.csv")
     OUTBOX_BATCH_SIZE: int = 100

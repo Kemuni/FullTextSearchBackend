@@ -9,6 +9,7 @@ dependencies = [
     "asyncpg>=0.31.0",
     "elasticsearch[async]>=9.5.1",
     "fastapi[standard]>=0.142.2",
+    "redis>=5.2.1",
     "sqlalchemy[asyncio]>=2.1.1",
 ]
 

@@ -34,6 +34,18 @@ services:
       - elasticsearch_data:/usr/share/elasticsearch/data
       - ./elasticsearch-plugins.yml:/usr/share/elasticsearch/config/elasticsearch-plugins.yml:ro
 
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+
   kibana:
     image: kibana:9.5.1
     ports:
@@ -52,6 +64,8 @@ services:
     depends_on:
       init-data:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/api/health-check/" ]
       interval: 10s
@@ -64,6 +78,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER?Variable not set}:${POSTGRES_PASSWORD?Variable not set}@db:5432/${POSTGRES_DB?Variable not set}
       ELASTICSEARCH_URL: http://elasticsearch:9200
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD?Variable not set}
+      REDIS_URL: redis://redis:6379/0
 
   init-data:
     build:
@@ -105,3 +120,4 @@ services:
 volumes:
   app-db-data:
   elasticsearch_data:
+  redis_data:
