@@ -3,9 +3,8 @@ name: Update OpenAPI Spec
 on:
   push:
     branches:
-      - main  # или master
+      - main
     paths:
-      # Запускать только при изменении кода, влияющего на схему
       - 'app/**'
       - 'scripts/generate_openapi.py'
 
@@ -17,7 +16,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          # Нужен токен с правами на запись для push
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
