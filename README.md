@@ -35,25 +35,29 @@
 
 # Инструкции
 ## Как запустить проект для разработки
-1. Запускаем **Docker**.
-2. Включаем **VPN!!!**, поскольку для установки плагина ES (`analysis-icu` для поддержки Unicode) он необходим, иначе будет **403 Forbidden**.
-3. Поднимаем полностью окружение для разработки *(Postgres, ElasticSearch, Kibana, сервис для заполнения init-данными)*:
+1. Клонируем проект
+   ```shell
+   git clone https://github.com/Kemuni/FullTextSearchBackend.git
+   ```
+2. Запускаем **Docker**.
+3. Включаем **VPN!!!**, поскольку для установки плагина ES (`analysis-icu` для поддержки Unicode) он необходим, иначе будет **403 Forbidden**.
+4. Поднимаем полностью окружение для разработки *(Postgres, ElasticSearch, Kibana, сервис для заполнения init-данными)*:
     ```shell
     make up-dev-env
     ```
-4. Синхронизируем UV и скачиваем все необходимые библиотеки:
+5. Синхронизируем UV и скачиваем все необходимые библиотеки:
     ```shell
     make sync-all
     ```
-5. Копируем `.env.example` и настраиваем `.env`:
+6. Копируем `.env.example` и настраиваем `.env`:
    ```shell
    cp .env.example .env
    ```
-6. После полного запуска окружения запускаем FastAPI в режиме разработки:
+7. После полного запуска окружения запускаем FastAPI в режиме разработки:
    ```shell
     make fastapi-dev
     ```
-7. Заходим на `http://localhost:8000/docs` и пользуемся `Swagger`.
+8. Заходим на `http://localhost:8000/docs` и пользуемся `Swagger`.
 
 Локальные ссылки (после 1-6 шагов):
 - Swagger FastAPI: http://localhost:8000/docs
