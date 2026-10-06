@@ -1,0 +1,53 @@
+name: Update OpenAPI Spec
+
+on:
+  push:
+    branches:
+      - main  # или master
+    paths:
+      # Запускать только при изменении кода, влияющего на схему
+      - 'app/**'
+      - 'scripts/generate_openapi.py'
+
+jobs:
+  update-spec:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          # Нужен токен с правами на запись для push
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-groups --frozen
+
+      - name: Generate OpenAPI spec
+        run: uv run python -m app.scripts.generate_openapi
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push if changed
+        run: |
+          git add openapi.json
+          # Проверяем, есть ли изменения
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: Обновление docs.json (OpenAPI) [skip ci]"
+          git push

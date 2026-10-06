@@ -1,0 +1,998 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "FullTextSearchBackend",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/api/health-check/": {
+            "get": {
+                "tags": [
+                    "utils"
+                ],
+                "summary": "Health Check",
+                "operationId": "health_check_api_health_check__get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/posts/": {
+            "get": {
+                "tags": [
+                    "posts"
+                ],
+                "summary": "Получение списка постов с пагинацией по БД PostgreSQL",
+                "operationId": "get_posts_api_posts__get",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 1,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1,
+                            "default": 50,
+                            "title": "Page Size"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse_PaginatedResponse_PostPublic__"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации запроса",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "posts"
+                ],
+                "summary": "Добавление нового поста",
+                "operationId": "create_post_api_posts__post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostIn"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse_PostPublic_"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации запроса",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/posts/search/": {
+            "get": {
+                "tags": [
+                    "posts"
+                ],
+                "summary": "Получение списка постов с пагинацией через ElasticSearch",
+                "operationId": "search_posts_api_posts_search__get",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "description": "Текстовый запрос",
+                            "default": "",
+                            "title": "Query"
+                        },
+                        "description": "Текстовый запрос"
+                    },
+                    {
+                        "name": "page_size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1,
+                            "description": "Количество элементов на странице",
+                            "default": 50,
+                            "title": "Page Size"
+                        },
+                        "description": "Количество элементов на странице"
+                    },
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Курсор для пагинации",
+                            "title": "Cursor"
+                        },
+                        "description": "Курсор для пагинации"
+                    },
+                    {
+                        "name": "rubrics",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Список рубрик",
+                            "title": "Rubrics"
+                        },
+                        "description": "Список рубрик"
+                    },
+                    {
+                        "name": "created_from",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Дата создания с",
+                            "title": "Created From"
+                        },
+                        "description": "Дата создания с"
+                    },
+                    {
+                        "name": "created_to",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Дата создания по",
+                            "title": "Created To"
+                        },
+                        "description": "Дата создания по"
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "enum": [
+                                "relevance",
+                                "created_date"
+                            ],
+                            "type": "string",
+                            "description": "Поле для сортировки",
+                            "default": "relevance",
+                            "title": "Sort By"
+                        },
+                        "description": "Поле для сортировки"
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ],
+                            "type": "string",
+                            "description": "Порядок сортировки",
+                            "default": "desc",
+                            "title": "Sort Order"
+                        },
+                        "description": "Порядок сортировки"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse_SearchResponse_PostPublic__"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации запроса",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/posts/rubrics/": {
+            "get": {
+                "tags": [
+                    "posts"
+                ],
+                "summary": "Получение списка уникальных rubrics с пагинацией через ElasticSearch",
+                "operationId": "get_rubrics_api_posts_rubrics__get",
+                "parameters": [
+                    {
+                        "name": "page_size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1,
+                            "description": "Количество элементов на странице",
+                            "default": 50,
+                            "title": "Page Size"
+                        },
+                        "description": "Количество элементов на странице"
+                    },
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Курсор для пагинации",
+                            "title": "Cursor"
+                        },
+                        "description": "Курсор для пагинации"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse_SearchResponse_str__"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации запроса",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/posts/{post_id}": {
+            "get": {
+                "tags": [
+                    "posts"
+                ],
+                "summary": "Получения поста по ID",
+                "operationId": "get_post_api_posts__post_id__get",
+                "parameters": [
+                    {
+                        "name": "post_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Post Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse_PostPublic_"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации запроса",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "posts"
+                ],
+                "summary": "Изменение созданного поста",
+                "operationId": "update_post_api_posts__post_id__put",
+                "parameters": [
+                    {
+                        "name": "post_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Post Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostIn"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse_PostPublic_"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации запроса",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "posts"
+                ],
+                "summary": "Удаление существующего поста",
+                "operationId": "delete_post_api_posts__post_id__delete",
+                "parameters": [
+                    {
+                        "name": "post_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Post Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ресурс не найден",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации запроса",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ErrorDetail": {
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "title": "Code"
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "code",
+                    "message"
+                ],
+                "title": "ErrorDetail"
+            },
+            "ErrorResponse": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "const": false,
+                        "title": "Success",
+                        "default": false
+                    },
+                    "data": {
+                        "type": "null",
+                        "title": "Data"
+                    },
+                    "errors": {
+                        "$ref": "#/components/schemas/ErrorDetail"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "errors"
+                ],
+                "title": "ErrorResponse"
+            },
+            "PaginatedResponse_PostPublic_": {
+                "properties": {
+                    "page": {
+                        "type": "integer",
+                        "title": "Page"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "title": "Page Size"
+                    },
+                    "total_pages": {
+                        "type": "integer",
+                        "title": "Total Pages"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/components/schemas/PostPublic"
+                        },
+                        "type": "array",
+                        "title": "Data"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "page",
+                    "page_size",
+                    "total_pages",
+                    "data"
+                ],
+                "title": "PaginatedResponse[PostPublic]"
+            },
+            "PostIn": {
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "title": "Text"
+                    },
+                    "rubrics": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Rubrics"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "text"
+                ],
+                "title": "PostIn"
+            },
+            "PostPublic": {
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "title": "Text"
+                    },
+                    "rubrics": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Rubrics"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "created_date": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Created Date"
+                    },
+                    "updated_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Updated At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "text",
+                    "id"
+                ],
+                "title": "PostPublic"
+            },
+            "SearchResponse_PostPublic_": {
+                "properties": {
+                    "old_cursor": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Old Cursor"
+                    },
+                    "next_cursor": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Next Cursor"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "title": "Page Size"
+                    },
+                    "total": {
+                        "type": "integer",
+                        "title": "Total"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/components/schemas/PostPublic"
+                        },
+                        "type": "array",
+                        "title": "Data"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "page_size",
+                    "total",
+                    "data"
+                ],
+                "title": "SearchResponse[PostPublic]"
+            },
+            "SearchResponse_str_": {
+                "properties": {
+                    "old_cursor": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Old Cursor"
+                    },
+                    "next_cursor": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Next Cursor"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "title": "Page Size"
+                    },
+                    "total": {
+                        "type": "integer",
+                        "title": "Total"
+                    },
+                    "data": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Data"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "page_size",
+                    "total",
+                    "data"
+                ],
+                "title": "SearchResponse[str]"
+            },
+            "SuccessResponse": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "const": true,
+                        "title": "Success",
+                        "default": true
+                    },
+                    "data": {
+                        "anyOf": [
+                            {},
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data"
+                    },
+                    "errors": {
+                        "type": "null",
+                        "title": "Errors"
+                    }
+                },
+                "type": "object",
+                "title": "SuccessResponse"
+            },
+            "SuccessResponse_PaginatedResponse_PostPublic__": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "const": true,
+                        "title": "Success",
+                        "default": true
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/PaginatedResponse_PostPublic_"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "errors": {
+                        "type": "null",
+                        "title": "Errors"
+                    }
+                },
+                "type": "object",
+                "title": "SuccessResponse[PaginatedResponse[PostPublic]]"
+            },
+            "SuccessResponse_PostPublic_": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "const": true,
+                        "title": "Success",
+                        "default": true
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/PostPublic"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "errors": {
+                        "type": "null",
+                        "title": "Errors"
+                    }
+                },
+                "type": "object",
+                "title": "SuccessResponse[PostPublic]"
+            },
+            "SuccessResponse_SearchResponse_PostPublic__": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "const": true,
+                        "title": "Success",
+                        "default": true
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SearchResponse_PostPublic_"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "errors": {
+                        "type": "null",
+                        "title": "Errors"
+                    }
+                },
+                "type": "object",
+                "title": "SuccessResponse[SearchResponse[PostPublic]]"
+            },
+            "SuccessResponse_SearchResponse_str__": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "const": true,
+                        "title": "Success",
+                        "default": true
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SearchResponse_str_"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "errors": {
+                        "type": "null",
+                        "title": "Errors"
+                    }
+                },
+                "type": "object",
+                "title": "SuccessResponse[SearchResponse[str]]"
+            }
+        }
+    }
+}
