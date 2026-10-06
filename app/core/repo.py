@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy import exists, or_, select
+from sqlalchemy import exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import OutboxAction, OutboxStatus, Post, PostOutbox
@@ -17,10 +17,16 @@ class DatabaseRepo:
         result = await self.db.execute(query)
         return bool(result.scalar_one())
 
-    async def get_posts(self) -> Sequence[Post]:
-        query = select(Post)
+    async def get_posts(self, limit: int, offset: int = 0) -> Sequence[Post]:
+        query = select(Post).limit(limit).offset(offset)
         result = await self.db.execute(query)
         return result.scalars().all()
+
+    async def get_posts_amount(self) -> int:
+        query = func.count(Post.id)
+        result = await self.db.execute(query)
+        amount = result.scalar()
+        return amount if amount is not None else 0
 
     async def get_post(self, post_id: int) -> Post | None:
         query = select(Post).where(Post.id == post_id)

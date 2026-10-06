@@ -73,3 +73,24 @@ class OutboxPostPayload(BaseModel):
     rubrics: list[str] = Field(default_factory=list)
     created_date: datetime.datetime
     updated_at: datetime.datetime
+
+
+class PostSearchQuery(BaseModel):
+    query: str = Field(default="", max_length=500, description="Текстовый запрос")
+    page_size: int = Field(
+        default=50, ge=1, le=100, description="Количество элементов на странице"
+    )
+    cursor: str | None = Field(default=None, description="Курсор для пагинации")
+    rubrics: list[str] | None = Field(default=None, description="Список рубрик")
+    created_from: datetime.datetime | None = Field(
+        default=None, description="Дата создания с"
+    )
+    created_to: datetime.datetime | None = Field(
+        default=None, description="Дата создания по"
+    )
+    sort_by: Literal["relevance", "created_date"] = Field(
+        default="relevance", description="Поле для сортировки"
+    )
+    sort_order: Literal["asc", "desc"] = Field(
+        default="desc", description="Порядок сортировки"
+    )

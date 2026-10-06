@@ -1,8 +1,8 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from httpx import AsyncClient
 
-from app.api.routes import posts as posts_routes
+from app.core import elasticsearch as elasticsearch_route
 from app.documents import PostDocument
 from app.models import Post
 
@@ -24,7 +24,7 @@ async def test_get_posts_and_get_post_routes(api_client: AsyncClient) -> None:
     found = await api_client.get(f"/api/posts/{post_id}")
     missing = await api_client.get("/api/posts/999999")
 
-    assert all_posts.json()["data"][0]["id"] == post_id
+    assert all_posts.json()["data"]["data"][0]["id"] == post_id
     assert found.json()["data"]["text"] == "first"
     assert missing.status_code == 404
     assert missing.json() == {
@@ -71,25 +71,66 @@ async def test_search_route_reads_documents_from_elasticsearch(
         Post(
             id=55,
             text="Привет ElasticSearch 🎁",
-            rubrics=["VK-55"],
+            rubrics=["VK-55", "news"],
             created_date=now,
+            updated_at=now,
+        )
+    )
+    second_document = PostDocument.from_post(
+        Post(
+            id=56,
+            text="Привет ещё раз",
+            rubrics=["VK-56"],
+            created_date=now - timedelta(days=1),
             updated_at=now,
         )
     )
 
     async def documents():
         yield document
+        yield second_document
 
     await PostDocument.bulk(documents(), using=elasticsearch_client, refresh="wait_for")
-    monkeypatch.setattr(posts_routes, "es_client", elasticsearch_client)
+    monkeypatch.setattr(elasticsearch_route, "es_client", elasticsearch_client)
 
-    response = await api_client.get("/api/posts/search/", params={"query": "привет"})
-    rubric_response = await api_client.get(
-        "/api/posts/search/", params={"query": "VK-55"}
+    response = await api_client.get(
+        "/api/posts/search/",
+        params={"query": "привет", "page_size": 1, "sort_by": "created_date"},
     )
-    invalid = await api_client.get("/api/posts/search/", params={"limit": 101})
+    rubric_response = await api_client.get(
+        "/api/posts/search/",
+        params={
+            "query": "привет",
+            "rubrics": "VK-55",
+            "created_from": (now - timedelta(seconds=1)).isoformat(),
+        },
+    )
+    second_page = await api_client.get(
+        "/api/posts/search/",
+        params={
+            "query": "привет",
+            "page_size": 1,
+            "sort_by": "created_date",
+            "cursor": response.json()["data"]["next_cursor"],
+        },
+    )
+    rubrics_response = await api_client.get(
+        "/api/posts/rubrics/", params={"page_size": 1}
+    )
+    rubrics_second_page = await api_client.get(
+        "/api/posts/rubrics/",
+        params={
+            "page_size": 1,
+            "cursor": rubrics_response.json()["data"]["next_cursor"],
+        },
+    )
+    invalid = await api_client.get("/api/posts/search/", params={"page_size": 101})
 
     assert response.status_code == 200
-    assert response.json()["data"][0]["id"] == 55
-    assert rubric_response.json()["data"][0]["rubrics"] == ["VK-55"]
+    assert response.json()["data"]["data"][0]["id"] == 55
+    assert response.json()["data"]["next_cursor"] is not None
+    assert rubric_response.json()["data"]["data"][0]["rubrics"] == ["VK-55", "news"]
+    assert second_page.json()["data"]["data"][0]["id"] == 56
+    assert rubrics_response.json()["data"]["data"] == ["VK-55"]
+    assert rubrics_second_page.json()["data"]["data"] == ["VK-56"]
     assert invalid.status_code == 422

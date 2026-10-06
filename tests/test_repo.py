@@ -13,9 +13,11 @@ async def test_is_posts_exist_and_get_methods(db_session: AsyncSession) -> None:
     assert await repo.is_posts_exist() is False
 
     created = await repo.create_or_update(PostIn(text="one", rubrics=["VK-1"]))
+    created2 = await repo.create_or_update(PostIn(text="two", rubrics=["VK-2"]))
 
     assert await repo.is_posts_exist() is True
-    assert [post.id for post in await repo.get_posts()] == [created.id]
+    assert [post.id for post in await repo.get_posts(5)] == [created.id, created2.id]
+    assert [post.id for post in await repo.get_posts(1, 1)] == [created2.id]
     found = await repo.get_post(created.id)
     assert found is not None
     assert found.text == "one"
@@ -96,4 +98,4 @@ async def test_process_posts_batch_persists_all_posts(db_session: AsyncSession) 
     )
 
     assert [post.text for post in posts] == ["first", "second"]
-    assert len(await repo.get_posts()) == 2
+    assert len(await repo.get_posts(5)) == 2
